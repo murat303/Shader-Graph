@@ -1,2 +1,0 @@
-# Shader-Graph
- URP Shaders
