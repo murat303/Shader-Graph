@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.cyanilux.shadergraph-variables": {
+      "version": "https://github.com/Cyanilux/ShaderGraphVariables.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "eb643a556ad79e8e4c145ffb3722f89c76f410c4"
+    },
     "com.unity.2d.sprite": {
       "version": "1.0.0",
       "depth": 0,
