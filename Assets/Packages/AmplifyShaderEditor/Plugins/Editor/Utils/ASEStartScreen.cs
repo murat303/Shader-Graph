@@ -107,6 +107,7 @@ namespace AmplifyShaderEditor
 			{ ( int )ASESRPBaseline.ASE_SRP_12, new ASESRPPackageDesc( ASESRPBaseline.ASE_SRP_12, "13ab599a7bda4e54fba3e92a13c9580a", "aa102d640b98b5d4781710a3a3dd6983" ) },
 			{ ( int )ASESRPBaseline.ASE_SRP_13, new ASESRPPackageDesc( ASESRPBaseline.ASE_SRP_13, "13ab599a7bda4e54fba3e92a13c9580a", "aa102d640b98b5d4781710a3a3dd6983" ) },
 			{ ( int )ASESRPBaseline.ASE_SRP_14, new ASESRPPackageDesc( ASESRPBaseline.ASE_SRP_14, "f6f268949ccf3f34fa4d18e92501ed82", "7a0bb33169d95ec499136d59cb25918b" ) },
+			{ ( int )ASESRPBaseline.ASE_SRP_15, new ASESRPPackageDesc( ASESRPBaseline.ASE_SRP_15, "69bc3229216b1504ea3e28b5820bbb0d", "641c955d37d2fac4f87e00ac5c9d9bd8" ) },
 		};
 
 		private void OnEnable()
@@ -397,9 +398,6 @@ namespace AmplifyShaderEditor
 				}
 			}
 			EditorGUILayout.EndHorizontal();
-
-			// Find a better way to update link buttons without repainting the window
-			Repaint();
 		}
 
 		void ImportSample( string pipeline, TemplateSRPType srpType )

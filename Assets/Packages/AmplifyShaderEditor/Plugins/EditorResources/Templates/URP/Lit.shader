@@ -37,9 +37,15 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				Specular:SetDefine:_SPECULAR_SETUP 1
 				Specular:ShowPort:Forward:Specular
 				Specular:HidePort:Forward:Metallic
+				Specular:SetDefine:Forward:pragma shader_feature_local_fragment _SPECULAR_SETUP
+				Specular:SetDefine:GBuffer:pragma shader_feature_local_fragment _SPECULAR_SETUP
+				Specular:SetDefine:Meta:pragma shader_feature_local_fragment _SPECULAR_SETUP
 				Metallic:RemoveDefine:_SPECULAR_SETUP 1
 				Metallic:ShowPort:Forward:Metallic
 				Metallic:HidePort:Forward:Specular
+				Metallic:RemoveDefine:Forward:pragma shader_feature_local_fragment _SPECULAR_SETUP
+				Metallic:RemoveDefine:GBuffer:pragma shader_feature_local_fragment _SPECULAR_SETUP
+				Metallic:RemoveDefine:Meta:pragma shader_feature_local_fragment _SPECULAR_SETUP
 			Option:Surface:Opaque,Transparent:Opaque
 				Opaque:SetPropertyOnSubShader:RenderType,Opaque
 				Opaque:SetPropertyOnSubShader:RenderQueue,Geometry
@@ -58,12 +64,10 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				None,disable:HidePort:Forward:Refraction Color
 				None,disable:RemoveDefine:ASE_REFRACTION 1
 				None,disable:RemoveDefine:REQUIRE_OPAQUE_TEXTURE 1
-				None,disable:RemoveDefine:ASE_NEEDS_FRAG_SCREEN_POSITION
 				Legacy:ShowPort:Forward:Refraction Index
 				Legacy:ShowPort:Forward:Refraction Color
 				Legacy:SetDefine:ASE_REFRACTION 1
 				Legacy:SetDefine:REQUIRE_OPAQUE_TEXTURE 1
-				Legacy:SetDefine:ASE_NEEDS_FRAG_SCREEN_POSITION
 			Option:  Blend:Alpha,Premultiply,Additive,Multiply:Alpha
 				Alpha:SetPropertyOnPass:Forward:BlendRGB,SrcAlpha,OneMinusSrcAlpha
 				Premultiply:SetPropertyOnPass:Forward:BlendRGB,One,OneMinusSrcAlpha
@@ -339,7 +343,7 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 		/*ase_stencil*/
 
 		HLSLINCLUDE
-		#pragma target 3.5
+		#pragma target 4.5
 		#pragma prefer_hlslcc gles
 		#pragma exclude_renderers d3d9 // ensure rendering platforms toggle list is visible
 
@@ -712,7 +716,10 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 		{
 			/*ase_main_pass*/
 			Name "Forward"
-			Tags { "LightMode" = "UniversalForward" }
+			Tags 
+			{ 
+				"LightMode" = "UniversalForward" 
+		    }
 
 			Blend One Zero
 			ZWrite On
@@ -723,6 +730,10 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 			/*ase_stencil*/
 
 			HLSLPROGRAM
+
+			#pragma shader_feature_local _RECEIVE_SHADOWS_OFF
+			#pragma shader_feature_local_fragment _SPECULARHIGHLIGHTS_OFF
+			#pragma shader_feature_local_fragment _ENVIRONMENTREFLECTIONS_OFF
 
 			#pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
 			#pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
@@ -735,9 +746,6 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 			#pragma multi_compile_fragment _ _LIGHT_LAYERS
 			#pragma multi_compile_fragment _ _LIGHT_COOKIES
 			#pragma multi_compile _ _FORWARD_PLUS
-			#pragma shader_feature_local _RECEIVE_SHADOWS_OFF
-			#pragma shader_feature_local_fragment _SPECULARHIGHLIGHTS_OFF
-			#pragma shader_feature_local_fragment _ENVIRONMENTREFLECTIONS_OFF
 
 			#pragma multi_compile _ LIGHTMAP_SHADOW_MIXING
 			#pragma multi_compile _ SHADOWS_SHADOWMASK
@@ -762,13 +770,24 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ShaderGraphFunctions.hlsl"
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DBuffer.hlsl"
 			#include "Packages/com.unity.render-pipelines.universal/Editor/ShaderGraph/Includes/ShaderPass.hlsl"
-			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/LODCrossFade.hlsl"
+
+			#if defined(LOD_FADE_CROSSFADE)
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/LODCrossFade.hlsl"
+            #endif
 
 			#if defined(UNITY_INSTANCING_ENABLED) && defined(_TERRAIN_INSTANCED_PERPIXEL_NORMAL)
 				#define ENABLE_TERRAIN_PERPIXEL_NORMAL
 			#endif
 
 			/*ase_pragma*/
+
+			#if defined(ASE_EARLY_Z_DEPTH_OPTIMIZE) && (SHADER_TARGET >= 45)
+				#define ASE_SV_DEPTH SV_DepthLessEqual
+				#define ASE_SV_POSITION_QUALIFIERS linear noperspective centroid
+			#else
+				#define ASE_SV_DEPTH SV_Depth
+				#define ASE_SV_POSITION_QUALIFIERS
+			#endif
 
 			struct VertexInput
 			{
@@ -784,22 +803,20 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 
 			struct VertexOutput
 			{
-				float4 clipPos : SV_POSITION;
-				float4 lightmapUVOrVertexSH : TEXCOORD0;
-				half4 fogFactorAndVertexLight : TEXCOORD1;
-				#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
-					float4 shadowCoord : TEXCOORD2;
-				#endif
+				ASE_SV_POSITION_QUALIFIERS float4 clipPos : SV_POSITION;
+				float4 clipPosV : TEXCOORD0;
+				float4 lightmapUVOrVertexSH : TEXCOORD1;
+				half4 fogFactorAndVertexLight : TEXCOORD2;
 				float4 tSpace0 : TEXCOORD3;
 				float4 tSpace1 : TEXCOORD4;
 				float4 tSpace2 : TEXCOORD5;
-				#if defined(ASE_NEEDS_FRAG_SCREEN_POSITION)
-					float4 screenPos : TEXCOORD6;
+				#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
+					float4 shadowCoord : TEXCOORD6;
 				#endif
 				#if defined(DYNAMICLIGHTMAP_ON)
 					float2 dynamicLightmapUV : TEXCOORD7;
 				#endif
-				/*ase_interp(8,):sp=sp;sc=tc2;wn.xyz=tc3.xyz;wt.xyz=tc4.xyz;wbt.xyz=tc5.xyz;wp.x=tc3.w;wp.y=tc4.w;wp.z=tc5.w;spu=tc6*/
+				/*ase_interp(8,):sp=sp;wn.xyz=tc3.xyz;wt.xyz=tc4.xyz;wbt.xyz=tc5.xyz;wp.x=tc3.w;wp.y=tc4.w;wp.z=tc5.w;sc=tc6*/
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
@@ -895,8 +912,8 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				#endif
 
 				#if defined(ENABLE_TERRAIN_PERPIXEL_NORMAL)
-					o.lightmapUVOrVertexSH.zw = v.texcoord;
-					o.lightmapUVOrVertexSH.xy = v.texcoord * unity_LightmapST.xy + unity_LightmapST.zw;
+					o.lightmapUVOrVertexSH.zw = v.texcoord.xy;
+					o.lightmapUVOrVertexSH.xy = v.texcoord.xy * unity_LightmapST.xy + unity_LightmapST.zw;
 				#endif
 
 				half3 vertexLight = VertexLighting( positionWS, normalInput.normalWS );
@@ -917,11 +934,7 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				#endif
 
 				o.clipPos = positionCS;
-
-				#if defined(ASE_NEEDS_FRAG_SCREEN_POSITION)
-					o.screenPos = ComputeScreenPos(positionCS);
-				#endif
-
+				o.clipPosV = positionCS;
 				return o;
 			}
 
@@ -1016,12 +1029,6 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 			}
 			#endif
 
-			#if defined(ASE_EARLY_Z_DEPTH_OPTIMIZE)
-				#define ASE_SV_DEPTH SV_DepthLessEqual
-			#else
-				#define ASE_SV_DEPTH SV_Depth
-			#endif
-
 			half4 frag ( VertexOutput IN
 						#ifdef ASE_DEPTH_WRITE_ON
 						,out float outputDepth : ASE_SV_DEPTH
@@ -1053,9 +1060,8 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				/*ase_local_var:wvd*/float3 WorldViewDirection = _WorldSpaceCameraPos.xyz  - WorldPosition;
 				/*ase_local_var:sc*/float4 ShadowCoords = float4( 0, 0, 0, 0 );
 
-				#if defined(ASE_NEEDS_FRAG_SCREEN_POSITION)
-					/*ase_local_var:spu*/float4 ScreenPos = IN.screenPos;
-				#endif
+				/*ase_local_var:sp*/float4 ClipPos = IN.clipPosV;
+				/*ase_local_var:spu*/float4 ScreenPos = ComputeScreenPos( IN.clipPosV );
 
 				float2 NormalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(IN.clipPos);
 
@@ -1086,12 +1092,12 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				float3 Translucency = /*ase_frag_out:Translucency;Float3;15;-1;_Translucency*/1/*end*/;
 
 				#ifdef ASE_DEPTH_WRITE_ON
-					float DepthValue = /*ase_frag_out:Depth Value;Float;17;-1;_DepthValue*/0/*end*/;
+					float DepthValue = /*ase_frag_out:Depth Value;Float;17;-1;_DepthValue*/IN.clipPos.z/*end*/;
 				#endif
 
 				#ifdef _CLEARCOAT
 					float CoatMask = /*ase_frag_out:Coat Mask;Float;18;-1;_CoatMask*/0/*end*/;
-					float CoatSmoothness = /*ase_frag_out:Coat Smoothness;Float;19;-1;_DepthValue*/0/*end*/;
+					float CoatSmoothness = /*ase_frag_out:Coat Smoothness;Float;20;-1;_clearCoatSmoothness*/0/*end*/;
 				#endif
 
 				#ifdef _ALPHATEST_ON
@@ -1313,7 +1319,10 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 		{
 			/*ase_hide_pass*/
 			Name "ShadowCaster"
-			Tags { "LightMode" = "ShadowCaster" }
+			Tags 
+			{ 
+				"LightMode" = "ShadowCaster" 
+		    }
 
 			ZWrite On
 			ZTest LEqual
@@ -1337,9 +1346,20 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 			#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/TextureStack.hlsl"
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ShaderGraphFunctions.hlsl"
 			#include "Packages/com.unity.render-pipelines.universal/Editor/ShaderGraph/Includes/ShaderPass.hlsl"
-			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/LODCrossFade.hlsl"
+
+			#if defined(LOD_FADE_CROSSFADE)
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/LODCrossFade.hlsl"
+            #endif
 
 			/*ase_pragma*/
+
+			#if defined(ASE_EARLY_Z_DEPTH_OPTIMIZE) && (SHADER_TARGET >= 45)
+				#define ASE_SV_DEPTH SV_DepthLessEqual
+				#define ASE_SV_POSITION_QUALIFIERS linear noperspective centroid
+			#else
+				#define ASE_SV_DEPTH SV_Depth
+				#define ASE_SV_POSITION_QUALIFIERS
+			#endif
 
 			struct VertexInput
 			{
@@ -1351,14 +1371,15 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 
 			struct VertexOutput
 			{
-				float4 clipPos : SV_POSITION;
+				ASE_SV_POSITION_QUALIFIERS float4 clipPos : SV_POSITION;
+				float4 clipPosV : TEXCOORD0;
 				#if defined(ASE_NEEDS_FRAG_WORLD_POSITION)
-					float3 worldPos : TEXCOORD0;
+					float3 worldPos : TEXCOORD1;
 				#endif
 				#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR) && defined(ASE_NEEDS_FRAG_SHADOWCOORDS)
-					float4 shadowCoord : TEXCOORD1;
-				#endif
-				/*ase_interp(2,):sp=sp;wp=tc0;sc=tc1*/
+					float4 shadowCoord : TEXCOORD2;
+				#endif				
+				/*ase_interp(3,):sp=sp;wp=tc1;sc=tc2*/
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
@@ -1464,7 +1485,7 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				#endif
 
 				o.clipPos = clipPos;
-
+				o.clipPosV = clipPos;
 				return o;
 			}
 
@@ -1547,12 +1568,6 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 			}
 			#endif
 
-			#if defined(ASE_EARLY_Z_DEPTH_OPTIMIZE)
-				#define ASE_SV_DEPTH SV_DepthLessEqual
-			#else
-				#define ASE_SV_DEPTH SV_Depth
-			#endif
-
 			half4 frag(	VertexOutput IN
 						#ifdef ASE_DEPTH_WRITE_ON
 						,out float outputDepth : ASE_SV_DEPTH
@@ -1567,6 +1582,8 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				#endif
 
 				/*ase_local_var:sc*/float4 ShadowCoords = float4( 0, 0, 0, 0 );
+				/*ase_local_var:sp*/float4 ClipPos = IN.clipPosV;
+				/*ase_local_var:spu*/float4 ScreenPos = ComputeScreenPos( IN.clipPosV );
 
 				#if defined(ASE_NEEDS_FRAG_SHADOWCOORDS)
 					#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
@@ -1583,7 +1600,7 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				float AlphaClipThresholdShadow = /*ase_frag_out:Alpha Clip Threshold Shadow;Float;4;-1;_AlphaClipShadow*/0.5/*end*/;
 
 				#ifdef ASE_DEPTH_WRITE_ON
-					float DepthValue = /*ase_frag_out:Depth Value;Float;5;-1;_DepthValue*/0/*end*/;
+					float DepthValue = /*ase_frag_out:Depth Value;Float;17;-1;_DepthValue*/IN.clipPos.z/*end*/;
 				#endif
 
 				#ifdef _ALPHATEST_ON
@@ -1612,7 +1629,10 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 		{
 			/*ase_hide_pass*/
 			Name "DepthOnly"
-			Tags { "LightMode" = "DepthOnly" }
+			Tags 
+			{ 
+				"LightMode" = "DepthOnly" 
+		    }
 
 			ZWrite On
 			ColorMask R
@@ -1633,9 +1653,20 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 			#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/TextureStack.hlsl"
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ShaderGraphFunctions.hlsl"
 			#include "Packages/com.unity.render-pipelines.universal/Editor/ShaderGraph/Includes/ShaderPass.hlsl"
-			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/LODCrossFade.hlsl"
 			
+			#if defined(LOD_FADE_CROSSFADE)
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/LODCrossFade.hlsl"
+            #endif
+
 			/*ase_pragma*/
+
+			#if defined(ASE_EARLY_Z_DEPTH_OPTIMIZE) && (SHADER_TARGET >= 45)
+				#define ASE_SV_DEPTH SV_DepthLessEqual
+				#define ASE_SV_POSITION_QUALIFIERS linear noperspective centroid
+			#else
+				#define ASE_SV_DEPTH SV_Depth
+				#define ASE_SV_POSITION_QUALIFIERS
+			#endif
 
 			struct VertexInput
 			{
@@ -1647,14 +1678,15 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 
 			struct VertexOutput
 			{
-				float4 clipPos : SV_POSITION;
+				ASE_SV_POSITION_QUALIFIERS float4 clipPos : SV_POSITION;
+				float4 clipPosV : TEXCOORD0;
 				#if defined(ASE_NEEDS_FRAG_WORLD_POSITION)
-				float3 worldPos : TEXCOORD0;
+				float3 worldPos : TEXCOORD1;
 				#endif
 				#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR) && defined(ASE_NEEDS_FRAG_SHADOWCOORDS)
-				float4 shadowCoord : TEXCOORD1;
+				float4 shadowCoord : TEXCOORD2;
 				#endif
-				/*ase_interp(2,):sp=sp;wp=tc0;sc=tc1*/
+				/*ase_interp(3,):sp=sp;wp=tc1;sc=tc2*/
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
@@ -1742,7 +1774,7 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				#endif
 
 				o.clipPos = positionCS;
-
+				o.clipPosV = positionCS;
 				return o;
 			}
 
@@ -1825,12 +1857,6 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 			}
 			#endif
 
-			#if defined(ASE_EARLY_Z_DEPTH_OPTIMIZE)
-				#define ASE_SV_DEPTH SV_DepthLessEqual
-			#else
-				#define ASE_SV_DEPTH SV_Depth
-			#endif
-
 			half4 frag(	VertexOutput IN
 						#ifdef ASE_DEPTH_WRITE_ON
 						,out float outputDepth : ASE_SV_DEPTH
@@ -1845,6 +1871,8 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				#endif
 
 				/*ase_local_var:sc*/float4 ShadowCoords = float4( 0, 0, 0, 0 );
+				/*ase_local_var:sp*/float4 ClipPos = IN.clipPosV;
+				/*ase_local_var:spu*/float4 ScreenPos = ComputeScreenPos( IN.clipPosV );
 
 				#if defined(ASE_NEEDS_FRAG_SHADOWCOORDS)
 					#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
@@ -1859,7 +1887,7 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				float Alpha = /*ase_frag_out:Alpha;Float;0;-1;_Alpha*/1/*end*/;
 				float AlphaClipThreshold = /*ase_frag_out:Alpha Clip Threshold;Float;1;-1;_AlphaClip*/0.5/*end*/;
 				#ifdef ASE_DEPTH_WRITE_ON
-					float DepthValue = /*ase_frag_out:Depth Value;Float;4;-1;_DepthValue*/0/*end*/;
+					float DepthValue = /*ase_frag_out:Depth Value;Float;17;-1;_DepthValue*/IN.clipPos.z/*end*/;
 				#endif
 
 				#ifdef _ALPHATEST_ON
@@ -1884,7 +1912,10 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 		{
 			/*ase_hide_pass*/
 			Name "Meta"
-			Tags { "LightMode" = "Meta" }
+			Tags 
+			{ 
+				"LightMode" = "Meta" 
+		    }
 
 			Cull Off
 
@@ -2169,7 +2200,10 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 		{
 			/*ase_hide_pass:SyncP*/
 			Name "Universal2D"
-			Tags { "LightMode" = "Universal2D" }
+			Tags 
+			{ 
+				"LightMode" = "Universal2D"
+		    }
 
 			Blend One Zero
 			ZWrite On
@@ -2425,7 +2459,10 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 		{
 			/*ase_hide_pass*/
 			Name "DepthNormals"
-			Tags { "LightMode" = "DepthNormals" }
+			Tags 
+			{ 
+				"LightMode" = "DepthNormals" 
+		    }
 
 			ZWrite On
 			Blend One Zero
@@ -2449,9 +2486,20 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 			#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/TextureStack.hlsl"
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ShaderGraphFunctions.hlsl"
 			#include "Packages/com.unity.render-pipelines.universal/Editor/ShaderGraph/Includes/ShaderPass.hlsl"
-			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/LODCrossFade.hlsl"
+
+			#if defined(LOD_FADE_CROSSFADE)
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/LODCrossFade.hlsl"
+            #endif
 
 			/*ase_pragma*/
+
+			#if defined(ASE_EARLY_Z_DEPTH_OPTIMIZE) && (SHADER_TARGET >= 45)
+				#define ASE_SV_DEPTH SV_DepthLessEqual
+				#define ASE_SV_POSITION_QUALIFIERS linear noperspective centroid
+			#else
+				#define ASE_SV_DEPTH SV_Depth
+				#define ASE_SV_POSITION_QUALIFIERS
+			#endif
 
 			struct VertexInput
 			{
@@ -2464,16 +2512,17 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 
 			struct VertexOutput
 			{
-				float4 clipPos : SV_POSITION;
+				ASE_SV_POSITION_QUALIFIERS float4 clipPos : SV_POSITION;
+				float4 clipPosV : TEXCOORD0;
+				float3 worldNormal : TEXCOORD1;
+				float4 worldTangent : TEXCOORD2;
 				#if defined(ASE_NEEDS_FRAG_WORLD_POSITION)
-					float3 worldPos : TEXCOORD0;
+					float3 worldPos : TEXCOORD3;
 				#endif
 				#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR) && defined(ASE_NEEDS_FRAG_SHADOWCOORDS)
-					float4 shadowCoord : TEXCOORD1;
+					float4 shadowCoord : TEXCOORD4;
 				#endif
-				float3 worldNormal : TEXCOORD2;
-				float4 worldTangent : TEXCOORD3;
-				/*ase_interp(4,):sp=sp;wp=tc0;sc=tc1;wn=tc2*/
+				/*ase_interp(5,):sp=sp;wn=tc1;wt=tc2;wp=tc3;sc=tc4*/
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
@@ -2565,7 +2614,7 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				#endif
 
 				o.clipPos = positionCS;
-
+				o.clipPosV = positionCS;
 				return o;
 			}
 
@@ -2651,12 +2700,6 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 			}
 			#endif
 
-			#if defined(ASE_EARLY_Z_DEPTH_OPTIMIZE)
-				#define ASE_SV_DEPTH SV_DepthLessEqual
-			#else
-				#define ASE_SV_DEPTH SV_Depth
-			#endif
-
 			void frag(	VertexOutput IN
 						, out half4 outNormalWS : SV_Target0
 						#ifdef ASE_DEPTH_WRITE_ON
@@ -2678,6 +2721,9 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				/*ase_local_var:wn*/float3 WorldNormal = IN.worldNormal;
 				/*ase_local_var:wt*/float4 WorldTangent = IN.worldTangent;
 
+				/*ase_local_var:sp*/float4 ClipPos = IN.clipPosV;
+				/*ase_local_var:spu*/float4 ScreenPos = ComputeScreenPos( IN.clipPosV );
+
 				#if defined(ASE_NEEDS_FRAG_SHADOWCOORDS)
 					#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
 						ShadowCoords = IN.shadowCoord;
@@ -2692,7 +2738,7 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				float Alpha = /*ase_frag_out:Alpha;Float;0;-1;_Alpha*/1/*end*/;
 				float AlphaClipThreshold = /*ase_frag_out:Alpha Clip Threshold;Float;1;-1;_AlphaClip*/0.5/*end*/;
 				#ifdef ASE_DEPTH_WRITE_ON
-					float DepthValue = /*ase_frag_out:Depth Value;Float;4;-1;_DepthValue*/0/*end*/;
+					float DepthValue = /*ase_frag_out:Depth Value;Float;17;-1;_DepthValue*/IN.clipPos.z/*end*/;
 				#endif
 
 				#ifdef _ALPHATEST_ON
@@ -2742,7 +2788,10 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 		{
 			/*ase_hide_pass:SyncP*/
 			Name "GBuffer"
-			Tags { "LightMode" = "UniversalGBuffer" }
+			Tags 
+			{ 
+				"LightMode" = "UniversalGBuffer" 
+		    }
 
 			Blend One Zero
 			ZWrite On
@@ -2753,15 +2802,16 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 
 			HLSLPROGRAM
 
+			#pragma shader_feature_local _RECEIVE_SHADOWS_OFF
+			#pragma shader_feature_local_fragment _SPECULARHIGHLIGHTS_OFF
+			#pragma shader_feature_local_fragment _ENVIRONMENTREFLECTIONS_OFF
+
 			#pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
 			#pragma multi_compile_fragment _ _REFLECTION_PROBE_BLENDING
 			#pragma multi_compile_fragment _ _REFLECTION_PROBE_BOX_PROJECTION
 			#pragma multi_compile_fragment _ _SHADOWS_SOFT
 			#pragma multi_compile_fragment _ _DBUFFER_MRT1 _DBUFFER_MRT2 _DBUFFER_MRT3
 			#pragma multi_compile_fragment _ _RENDER_PASS_ENABLED
-			#pragma shader_feature_local _RECEIVE_SHADOWS_OFF
-			#pragma shader_feature_local_fragment _SPECULARHIGHLIGHTS_OFF
-			#pragma shader_feature_local_fragment _ENVIRONMENTREFLECTIONS_OFF
 
 			#pragma multi_compile _ LIGHTMAP_SHADOW_MIXING
 			#pragma multi_compile _ SHADOWS_SHADOWMASK
@@ -2786,13 +2836,24 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ShaderGraphFunctions.hlsl"
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DBuffer.hlsl"
 			#include "Packages/com.unity.render-pipelines.universal/Editor/ShaderGraph/Includes/ShaderPass.hlsl"
-			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/LODCrossFade.hlsl"
+
+			#if defined(LOD_FADE_CROSSFADE)
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/LODCrossFade.hlsl"
+            #endif
 			
 			#if defined(UNITY_INSTANCING_ENABLED) && defined(_TERRAIN_INSTANCED_PERPIXEL_NORMAL)
 				#define ENABLE_TERRAIN_PERPIXEL_NORMAL
 			#endif
 
 			/*ase_pragma*/
+
+			#if defined(ASE_EARLY_Z_DEPTH_OPTIMIZE) && (SHADER_TARGET >= 45)
+				#define ASE_SV_DEPTH SV_DepthLessEqual
+				#define ASE_SV_POSITION_QUALIFIERS linear noperspective centroid
+			#else
+				#define ASE_SV_DEPTH SV_Depth
+				#define ASE_SV_POSITION_QUALIFIERS
+			#endif
 
 			struct VertexInput
 			{
@@ -2808,22 +2869,20 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 
 			struct VertexOutput
 			{
-				float4 clipPos : SV_POSITION;
-				float4 lightmapUVOrVertexSH : TEXCOORD0;
-				half4 fogFactorAndVertexLight : TEXCOORD1;
-				#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
-				float4 shadowCoord : TEXCOORD2;
-				#endif
+				ASE_SV_POSITION_QUALIFIERS float4 clipPos : SV_POSITION;
+				float4 clipPosV : TEXCOORD0;
+				float4 lightmapUVOrVertexSH : TEXCOORD1;
+				half4 fogFactorAndVertexLight : TEXCOORD2;
 				float4 tSpace0 : TEXCOORD3;
 				float4 tSpace1 : TEXCOORD4;
 				float4 tSpace2 : TEXCOORD5;
-				#if defined(ASE_NEEDS_FRAG_SCREEN_POSITION)
-				float4 screenPos : TEXCOORD6;
+				#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
+				float4 shadowCoord : TEXCOORD6;
 				#endif
 				#if defined(DYNAMICLIGHTMAP_ON)
 				float2 dynamicLightmapUV : TEXCOORD7;
 				#endif
-				/*ase_interp(8,):sp=sp;sc=tc2;wn.xyz=tc3.xyz;wt.xyz=tc4.xyz;wbt.xyz=tc5.xyz;wp.x=tc3.w;wp.y=tc4.w;wp.z=tc5.w;spu=tc6*/
+				/*ase_interp(8,):sp=sp;wn.xyz=tc3.xyz;wt.xyz=tc4.xyz;wbt.xyz=tc5.xyz;wp.x=tc3.w;wp.y=tc4.w;wp.z=tc5.w;sc=tc6*/
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
@@ -2916,8 +2975,8 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				#endif
 
 				#if defined(ENABLE_TERRAIN_PERPIXEL_NORMAL)
-					o.lightmapUVOrVertexSH.zw = v.texcoord;
-					o.lightmapUVOrVertexSH.xy = v.texcoord * unity_LightmapST.xy + unity_LightmapST.zw;
+					o.lightmapUVOrVertexSH.zw = v.texcoord.xy;
+					o.lightmapUVOrVertexSH.xy = v.texcoord.xy * unity_LightmapST.xy + unity_LightmapST.zw;
 				#endif
 
 				half3 vertexLight = VertexLighting( positionWS, normalInput.normalWS );
@@ -2931,12 +2990,8 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 					o.shadowCoord = GetShadowCoord( vertexInput );
 				#endif
 
-					o.clipPos = positionCS;
-
-				#if defined(ASE_NEEDS_FRAG_SCREEN_POSITION)
-					o.screenPos = ComputeScreenPos(positionCS);
-				#endif
-
+				o.clipPos = positionCS;
+				o.clipPosV = positionCS;
 				return o;
 			}
 
@@ -3031,12 +3086,6 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 			}
 			#endif
 
-			#if defined(ASE_EARLY_Z_DEPTH_OPTIMIZE)
-				#define ASE_SV_DEPTH SV_DepthLessEqual
-			#else
-				#define ASE_SV_DEPTH SV_Depth
-			#endif
-
 			FragmentOutput frag ( VertexOutput IN
 								#ifdef ASE_DEPTH_WRITE_ON
 								,out float outputDepth : ASE_SV_DEPTH
@@ -3065,9 +3114,8 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				/*ase_local_var:wvd*/float3 WorldViewDirection = _WorldSpaceCameraPos.xyz  - WorldPosition;
 				/*ase_local_var:sc*/float4 ShadowCoords = float4( 0, 0, 0, 0 );
 
-				#if defined(ASE_NEEDS_FRAG_SCREEN_POSITION)
-					/*ase_local_var:spu*/float4 ScreenPos = IN.screenPos;
-				#endif
+				/*ase_local_var:sp*/float4 ClipPos = IN.clipPosV;
+				/*ase_local_var:spu*/float4 ScreenPos = ComputeScreenPos( IN.clipPosV );
 
 				float2 NormalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(IN.clipPos);
 
@@ -3100,7 +3148,7 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 				float3 Translucency = /*ase_frag_out:Translucency;Float3;15;-1;_Translucency*/1/*end*/;
 
 				#ifdef ASE_DEPTH_WRITE_ON
-					float DepthValue = /*ase_frag_out:Depth Value;Float;17;-1;_DepthValue*/0/*end*/;
+					float DepthValue = /*ase_frag_out:Depth Value;Float;17;-1;_DepthValue*/IN.clipPos.z/*end*/;
 				#endif
 
 				#ifdef _ALPHATEST_ON
@@ -3198,7 +3246,10 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 		{
 			/*ase_hide_pass*/
 			Name "SceneSelectionPass"
-			Tags { "LightMode" = "SceneSelectionPass" }
+			Tags
+			{ 
+				"LightMode" = "SceneSelectionPass" 
+		    }
 
 			Cull Off
 
@@ -3439,7 +3490,10 @@ Shader /*ase_name*/ "Hidden/Universal/Lit" /*end*/
 		{
 			/*ase_hide_pass*/
 			Name "ScenePickingPass"
-			Tags { "LightMode" = "Picking" }
+			Tags
+			{ 
+				"LightMode" = "Picking"
+		    }
 
 			HLSLPROGRAM
 

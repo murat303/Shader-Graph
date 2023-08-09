@@ -109,7 +109,7 @@ Material:
     - _GlossyReflections: 0
     - _HeightScale: 0.05
     - _Metallic: 0
-    - _MetallicStrength: 0.1
+    - _MetallicStrength: 0
     - _OcclusionStrength: 2
     - _Parallax: 0.041
     - _QueueControl: 0

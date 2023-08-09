@@ -1,3 +1,56 @@
+v1.9.1.8
+
+   Editor
+      * Fixed Undo-related error spam (#205)
+      * Fix for UIUtils console spam on Unity 2022.3+ (#208)
+      * Fixed "Indirect Diffuse Light" node errors on URP 15 (#209)
+      * Added "Device Depth" node; depth range compatible with "Depth Value" input
+      
+   Templates
+      * Fixed "Depth Value" input issues on URP (#190)
+      * Fixed EarlyZ errors on URP (#191)      
+      * Fixed "Depth Offset" input issues on HDRP
+
+v1.9.1.7
+
+   Editor
+      * Fixed Start Screen high CPU/GPU usage
+
+   Templates
+      * Fixed decal angle fade in (HDRP 12x 14x 15x)
+      * Fixed positionCS errors in Lit shader (URP 15x)
+
+v1.9.1.6
+
+   Editor
+      * Added support for Unity 2023
+      * Fixed NRE caused by Shader Function additional directives
+      * Fixed resize NRE in functions switch
+      * Increased MaxAllowedAmount in FunctionSwitch from 9 to 10
+      * Fixed GetScriptingDefineSymbolsForGroup deprecation warnings
+
+   Samples
+      * Added samples for SRP 15x
+
+   Nodes
+      * New "Metal Reflectance" node
+      * New "All" node
+      * New "Any" node
+      * New "Reciprocal" node
+      * New "Bacteria Smoothstep" node
+      * New "World Normal Face" node
+      * Update "Bacteria Smoothstep" node
+      * Added tags "refl reflect reflection" to "Reflect" node
+      * Renamed "Light" category to "Lighting"
+      * Added SRP 16x to "SwitchBySRPVersion" Node
+
+   Templates
+      * New SRP templates 15x
+      * Added ase_pragma to "UI-Default" template
+      * Updated SRP templates (10x 12x 14x)      
+      * Fixed color mask for light layers in HDRP (12x)
+      * Fixed URP terrain instancing (12x 14x)
+
 v1.9.1.5
 
    Editor
