@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: InputVectors
-  m_Shader: {fileID: -6465566751694194690, guid: e6f96805c72a0bf498cd47e6a191f22c,
+  m_Name: MinMaxClampSaturate
+  m_Shader: {fileID: -6465566751694194690, guid: 906a3069d9f9d8a46b295b4e3fc2b102,
     type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0

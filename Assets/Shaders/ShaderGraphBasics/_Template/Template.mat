@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: InputVectors
-  m_Shader: {fileID: -6465566751694194690, guid: e6f96805c72a0bf498cd47e6a191f22c,
+  m_Name: Template
+  m_Shader: {fileID: -6465566751694194690, guid: e5441640438b3f54981328f476d9e319,
     type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
