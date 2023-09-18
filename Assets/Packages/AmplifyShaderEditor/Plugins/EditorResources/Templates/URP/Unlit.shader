@@ -191,7 +191,7 @@ Shader /*ase_name*/ "Hidden/Universal/Unlit" /*end*/
 		/*ase_stencil*/
 
 		HLSLINCLUDE
-		#pragma target 3.5
+		#pragma target 4.5
 		#pragma prefer_hlslcc gles
 		#pragma exclude_renderers d3d9 // ensure rendering platforms toggle list is visible
 
@@ -559,7 +559,6 @@ Shader /*ase_name*/ "Hidden/Universal/Unlit" /*end*/
 
 			#pragma multi_compile _ LIGHTMAP_ON
 			#pragma multi_compile _ DIRLIGHTMAP_COMBINED
-			#pragma shader_feature _ _SAMPLE_GI
 			#pragma multi_compile_fragment _ _DBUFFER_MRT1 _DBUFFER_MRT2 _DBUFFER_MRT3
         	#pragma multi_compile_fragment _ DEBUG_DISPLAY
         	#pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
@@ -1430,7 +1429,6 @@ Shader /*ase_name*/ "Hidden/Universal/Unlit" /*end*/
 
 			#pragma multi_compile _ LIGHTMAP_ON
 			#pragma multi_compile _ DIRLIGHTMAP_COMBINED
-			#pragma shader_feature _ _SAMPLE_GI
 			#pragma multi_compile _ _DBUFFER_MRT1 _DBUFFER_MRT2 _DBUFFER_MRT3
 			#pragma multi_compile _ DEBUG_DISPLAY
 			#define SHADERPASS SHADERPASS_UNLIT
