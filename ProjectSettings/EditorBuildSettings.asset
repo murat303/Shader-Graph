@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Shaders/ShaderGraphBasics/_Examples/MaterialQuality/MaterialQuality.unity
+    guid: 35b2fb325c1596b4094a7e296761e612
   m_configObjects: {}

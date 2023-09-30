@@ -63,9 +63,6 @@
             "m_Id": "1d9b5e86f63d4e6ea91f4196fd651b50"
         },
         {
-            "m_Id": "fcae5805ff404f0fb5f59f6a04de2fde"
-        },
-        {
             "m_Id": "7df8b6d4e122485c9430d4fa9a6e7b62"
         },
         {
@@ -83,7 +80,11 @@
             "m_Id": "d931ca1c77724fa882fad2b9eac2af2e"
         }
     ],
-    "m_StickyNoteDatas": [],
+    "m_StickyNoteDatas": [
+        {
+            "m_Id": "7817fcbb21864afc8320fde42e09340c"
+        }
+    ],
     "m_Edges": [
         {
             "m_OutputSlot": {
@@ -1379,6 +1380,26 @@
 
 {
     "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.StickyNoteData",
+    "m_ObjectId": "7817fcbb21864afc8320fde42e09340c",
+    "m_Title": "",
+    "m_Content": "If you can move things from the pixel shader into the vertex shader, you can make it a cheaper shader overall",
+    "m_TextSize": 0,
+    "m_Theme": 0,
+    "m_Position": {
+        "serializedVersion": "2",
+        "x": -1934.0,
+        "y": -564.0,
+        "width": 728.0,
+        "height": 175.0
+    },
+    "m_Group": {
+        "m_Id": ""
+    }
+}
+
+{
+    "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.BlockNode",
     "m_ObjectId": "7df8b6d4e122485c9430d4fa9a6e7b62",
     "m_Group": {
@@ -1447,8 +1468,8 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": -827.0001220703125,
-            "y": 252.00001525878907,
+            "x": -973.9999389648438,
+            "y": 253.99998474121095,
             "width": 275.0,
             "height": 278.0
         }
@@ -1994,8 +2015,8 @@
     "m_ObjectId": "d931ca1c77724fa882fad2b9eac2af2e",
     "m_Title": "Scroll UV",
     "m_Position": {
-        "x": -1933.9998779296875,
-        "y": -370.0
+        "x": -1934.0001220703125,
+        "y": -370.0000305175781
     }
 }
 
@@ -2052,31 +2073,6 @@
     ],
     "m_Dropdowns": [],
     "m_DropdownSelectedEntries": []
-}
-
-{
-    "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.Vector4MaterialSlot",
-    "m_ObjectId": "e0f042eb72204a758f05a3e39422b53e",
-    "m_Id": 0,
-    "m_DisplayName": "Out",
-    "m_SlotType": 1,
-    "m_Hidden": false,
-    "m_ShaderOutputName": "Out",
-    "m_StageCapability": 3,
-    "m_Value": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 0.0
-    },
-    "m_DefaultValue": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 0.0
-    },
-    "m_Labels": []
 }
 
 {
@@ -2254,50 +2250,6 @@
     "m_SupportsLODCrossFade": false,
     "m_CustomEditorGUI": "",
     "m_SupportVFX": false
-}
-
-{
-    "m_SGVersion": 1,
-    "m_Type": "UnityEditor.ShaderGraph.ColorNode",
-    "m_ObjectId": "fcae5805ff404f0fb5f59f6a04de2fde",
-    "m_Group": {
-        "m_Id": "d931ca1c77724fa882fad2b9eac2af2e"
-    },
-    "m_Name": "Color",
-    "m_DrawState": {
-        "m_Expanded": false,
-        "m_Position": {
-            "serializedVersion": "2",
-            "x": -1905.9998779296875,
-            "y": -309.0,
-            "width": 100.0,
-            "height": 94.0
-        }
-    },
-    "m_Slots": [
-        {
-            "m_Id": "e0f042eb72204a758f05a3e39422b53e"
-        }
-    ],
-    "synonyms": [
-        "GroupColor"
-    ],
-    "m_Precision": 0,
-    "m_PreviewExpanded": false,
-    "m_DismissedVersion": 0,
-    "m_PreviewMode": 0,
-    "m_CustomColors": {
-        "m_SerializableColors": []
-    },
-    "m_Color": {
-        "color": {
-            "r": 1.0,
-            "g": 0.46698111295700076,
-            "b": 0.46698111295700076,
-            "a": 0.10000000149011612
-        },
-        "mode": 0
-    }
 }
 
 {
